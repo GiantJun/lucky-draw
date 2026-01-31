@@ -19,7 +19,7 @@
               color: '#fff',
             }"
           >
-            {{ item.name ? item.name : item.key }}
+            {{ item.displayName }}
             <img v-if="item.photo" :src="item.photo" :width="50" :height="50" />
           </a>
         </li>
@@ -27,37 +27,30 @@
     </div>
     <transition name="bounce">
       <div id="resbox" v-show="showRes">
-        <p @click="showRes = false">{{ categoryName }}抽奖结果：</p>
+        <p @click="showRes = false">{{ prizeDisplayName }}抽奖结果：</p>
         <div class="container">
           <span
-            v-for="item in resArr"
-            :key="item"
+            v-for="(item, index) in resArr"
+            :key="index"
             class="itemres"
             :style="resCardStyle"
-            :data-id="item"
             @click="showRes = false"
             :class="{
-              numberOver:
-                !!photos.find((d) => d.id === item) ||
-                !!list.find((d) => d.key === item),
+              numberOver: !!item.photo,
             }"
           >
-            <span class="cont" v-if="!photos.find((d) => d.id === item)">
+            <span class="cont" v-if="!item.photo">
               <span
-                v-if="!!list.find((d) => d.key === item)"
                 :style="{
                   fontSize: '40px',
                 }"
               >
-                {{ list.find((d) => d.key === item).name }}
-              </span>
-              <span v-else>
-                {{ item }}
+                {{ item.displayName }}
               </span>
             </span>
             <img
-              v-if="photos.find((d) => d.id === item)"
-              :src="photos.find((d) => d.id === item).value"
+              v-if="item.photo"
+              :src="item.photo"
               alt="photo"
               :width="160"
               :height="160"
@@ -120,13 +113,13 @@ import {
   getData,
   configField,
   resultField,
-  newLotteryField,
-  conversionCategoryName,
-  listField,
+  participantsField,
+  prizesField
 } from '@/helper/index';
-import { luckydrawHandler } from '@/helper/algorithm';
+import { generateCandidates, randomSelectWinners } from '@/helper/algorithm';
 import Result from '@/components/Result';
 import { database, DB_STORE_NAME } from '@/helper/db';
+
 export default {
   name: 'App',
 
@@ -135,12 +128,12 @@ export default {
   computed: {
     resCardStyle() {
       const style = { fontSize: '30px' };
-      const { number } = this.config;
-      if (number < 100) {
+      const participantsCount = this.participants.length;
+      if (participantsCount < 100) {
         style.fontSize = '100px';
-      } else if (number < 1000) {
+      } else if (participantsCount < 1000) {
         style.fontSize = '80px';
-      } else if (number < 10000) {
+      } else if (participantsCount < 10000) {
         style.fontSize = '60px';
       }
       return style;
@@ -158,67 +151,83 @@ export default {
         this.$store.commit('setResult', val);
       },
     },
-    list() {
-      return this.$store.state.list;
+    participants() {
+      return this.$store.state.participants;
     },
-    allresult() {
-      let allresult = [];
-      for (const key in this.result) {
-        if (this.result.hasOwnProperty(key)) {
-          const element = this.result[key];
-          allresult = allresult.concat(element);
-        }
-      }
-      return allresult;
-    },
-    datas() {
-      const { number } = this.config;
-      const nums = number >= 1500 ? 500 : this.config.number;
-      const configNum = number > 1500 ? Math.floor(number / 3) : number;
-      const randomShowNums = luckydrawHandler(configNum, [], nums);
-      const randomShowDatas = randomShowNums.map((item) => {
-        const listData = this.list.find((d) => d.key === item);
-        const photo = this.photos.find((d) => d.id === item);
-        return {
-          key: item * (number > 1500 ? 3 : 1),
-          name: listData ? listData.name : '',
-          photo: photo ? photo.value : '',
-        };
-      });
-      return randomShowDatas;
-    },
-    categoryName() {
-      return conversionCategoryName(this.category);
+    prizes() {
+      return this.$store.state.prizes;
     },
     photos() {
       return this.$store.state.photos;
     },
+    datas() {
+      // 如果正在抽奖且有当前候选人，显示当前候选人
+      if (this.currentCandidates.length > 0) {
+        return this.currentCandidates.map((candidate, index) => {
+          const photo = this.photos.find((d) => d.name === candidate.realName);
+          return {
+            key: `${candidate.displayName}_${index}`,
+            displayName: candidate.displayName,
+            photo: photo ? photo.value : '',
+          };
+        });
+      }
+
+      // 否则显示所有参与人员的样本（用于初始展示）
+      const sampleSize = this.participants.length >= 1500 ? 500 : this.participants.length;
+      const displayParticipants = [];
+
+      for (let i = 0; i < Math.min(sampleSize, this.participants.length); i++) {
+        const person = this.participants[i];
+        const photo = this.photos.find((d) => d.name === person.name);
+
+        // 根据配置决定显示方式
+        if (this.config.enableExtraTimes && person.extraTimes > 0) {
+          // 显示所有候选名
+          for (let j = 1; j <= person.extraTimes; j++) {
+            displayParticipants.push({
+              key: `${person.name}_${j}`,
+              displayName: `${person.name}${j}`,
+              photo: photo ? photo.value : '',
+            });
+          }
+        } else {
+          displayParticipants.push({
+            key: person.name,
+            displayName: person.name,
+            photo: photo ? photo.value : '',
+          });
+        }
+      }
+
+      return displayParticipants;
+    },
+    prizeDisplayName() {
+      if (!this.currentPrizeLevel) return '';
+      if (!this.currentPrizeName) return this.currentPrizeLevel;
+      return `${this.currentPrizeLevel} - ${this.currentPrizeName}`;
+    },
   },
+
   created() {
     const data = getData(configField);
     if (data) {
       this.$store.commit('setConfig', Object.assign({}, data));
     }
+
     const result = getData(resultField);
     if (result) {
       this.$store.commit('setResult', result);
     }
 
-    const newLottery = getData(newLotteryField);
-    if (newLottery) {
-      const config = this.config;
-      newLottery.forEach((item) => {
-        this.$store.commit('setNewLottery', item);
-        if (!config[item.key]) {
-          this.$set(config, item.key, 0);
-        }
-      });
-      this.$store.commit('setConfig', config);
+    const participants = getData(participantsField);
+    if (participants) {
+      this.$store.commit('setParticipants', participants);
     }
 
-    const list = getData(listField);
-    if (list) {
-      this.$store.commit('setList', list);
+    const prizes = getData(prizesField);
+    if (prizes) {
+      this.$store.commit('setPrizes', prizes);
     }
   },
 
@@ -229,11 +238,15 @@ export default {
       showConfig: false,
       showResult: false,
       resArr: [],
-      category: '',
+      currentCandidates: [],
+      currentPrizeLevel: '',
+      currentPrizeName: '',
+      currentPrize: null,
       audioPlaying: false,
       audioSrc: bgaudio,
     };
   },
+
   watch: {
     photos: {
       deep: true,
@@ -244,6 +257,7 @@ export default {
       },
     },
   },
+
   mounted() {
     this.startTagCanvas();
     setTimeout(() => {
@@ -251,13 +265,15 @@ export default {
     }, 1000);
     window.addEventListener('resize', this.reportWindowSize);
   },
+
   beforeDestroy() {
     window.removeEventListener('resize', this.reportWindowSize);
   },
+
   methods: {
     reportWindowSize() {
       const AppCanvas = this.$el.querySelector('#rootcanvas');
-      if (AppCanvas.parentElement) {
+      if (AppCanvas && AppCanvas.parentElement) {
         AppCanvas.parentElement.removeChild(AppCanvas);
       }
       this.startTagCanvas();
@@ -317,18 +333,25 @@ export default {
       this.showRes = false;
     },
     toggle(form) {
-      const { speed, config } = this;
+      const { speed } = this;
+
       if (this.running) {
+        // 停止抽奖
         this.audioSrc = bgaudio;
         this.loadAudio();
 
         window.TagCanvas.SetSpeed('rootcanvas', speed());
         this.showRes = true;
         this.running = !this.running;
+
+        // 清空当前候选人
+        this.currentCandidates = [];
+
         this.$nextTick(() => {
           this.reloadTagCanvas();
         });
       } else {
+        // 开始抽奖
         this.showRes = false;
         if (!form) {
           return;
@@ -337,34 +360,67 @@ export default {
         this.audioSrc = beginaudio;
         this.loadAudio();
 
-        const { number } = config;
-        const { category, mode, qty, remain, allin } = form;
-        let num = 1;
-        if (mode === 1 || mode === 5) {
-          num = mode;
-        } else if (mode === 0) {
-          num = remain;
-        } else if (mode === 99) {
-          num = qty;
-        }
-        const resArr = luckydrawHandler(
-          number,
-          allin ? [] : this.allresult,
-          num
-        );
-        this.resArr = resArr;
+        const { prizeLevel, prizeName, prize, num } = form;
 
-        this.category = category;
-        if (!this.result[category]) {
-          this.$set(this.result, category, []);
+        // 保存当前抽奖信息
+        this.currentPrizeLevel = prizeLevel;
+        this.currentPrizeName = prizeName;
+        this.currentPrize = prize;
+
+        try {
+          // 生成候选人名单
+          const candidates = generateCandidates(
+            prizeLevel,
+            prizeName,
+            prize,
+            this.participants,
+            this.result,
+            this.config
+          );
+
+          if (candidates.length < num) {
+            this.$message.error('符合条件的候选人数量不足');
+            return;
+          }
+
+          // 保存候选人用于显示
+          this.currentCandidates = candidates;
+
+          // 随机抽取中奖者
+          const winners = randomSelectWinners(candidates, num);
+
+          // 添加照片信息
+          this.resArr = winners.map(winner => {
+            const photo = this.photos.find((d) => d.name === winner.realName);
+            return {
+              ...winner,
+              photo: photo ? photo.value : null
+            };
+          });
+
+          // 保存结果到store
+          if (!this.result[prizeLevel]) {
+            this.$set(this.result, prizeLevel, {});
+          }
+          if (!this.result[prizeLevel][prizeName]) {
+            this.$set(this.result[prizeLevel], prizeName, []);
+          }
+
+          const oldRes = this.result[prizeLevel][prizeName] || [];
+          const newResult = Object.assign({}, this.result);
+          newResult[prizeLevel][prizeName] = oldRes.concat(winners);
+          this.result = newResult;
+
+          window.TagCanvas.SetSpeed('rootcanvas', [5, 1]);
+          this.running = !this.running;
+
+          this.$nextTick(() => {
+            this.reloadTagCanvas();
+          });
+        } catch (error) {
+          this.$message.error('抽奖失败: ' + error.message);
+          console.error(error);
         }
-        const oldRes = this.result[category] || [];
-        const data = Object.assign({}, this.result, {
-          [category]: oldRes.concat(resArr),
-        });
-        this.result = data;
-        window.TagCanvas.SetSpeed('rootcanvas', [5, 1]);
-        this.running = !this.running;
       }
     },
   },
@@ -481,7 +537,6 @@ export default {
       bottom: 0;
       left: 0;
       font-size: 14px;
-      // border-radius: 50%;
       z-index: 1;
     }
   }

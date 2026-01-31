@@ -6,41 +6,65 @@
     <el-button size="mini" @click="showRemoveoptions = true">
       重置
     </el-button>
-    <el-button size="mini" @click="showImport = true">
-      导入名单
-    </el-button>
     <el-button size="mini" @click="showImportphoto = true">
       导入照片
     </el-button>
+
+    <!-- 抽奖配置对话框 -->
     <el-dialog
       :append-to-body="true"
       :visible.sync="showSetwat"
       class="setwat-dialog"
-      width="400px"
+      width="450px"
     >
-      <el-form ref="form" :model="form" label-width="80px" size="mini">
-        <el-form-item label="抽取奖项">
-          <el-select v-model="form.category" placeholder="请选取本次抽取的奖项">
+      <el-form ref="form" :model="form" label-width="100px" size="mini">
+        <el-form-item label="奖品等级">
+          <el-select
+            v-model="form.prizeLevel"
+            placeholder="请选择奖品等级"
+            @change="onPrizeLevelChange"
+          >
             <el-option
-              :label="item.label"
-              :value="item.value"
-              v-for="(item, index) in categorys"
+              :label="level"
+              :value="level"
+              v-for="level in prizeLevels"
+              :key="level"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="具体奖品" v-if="form.prizeLevel">
+          <el-select
+            v-model="form.prizeName"
+            placeholder="请选择具体奖品"
+            @change="onPrizeNameChange"
+          >
+            <el-option
+              :label="prize.name"
+              :value="prize.name"
+              v-for="(prize, index) in currentPrizes"
               :key="index"
             ></el-option>
           </el-select>
         </el-form-item>
 
-        <el-form-item label=" " v-if="form.category">
-          <span>
-            共&nbsp;
-            <span class="colorred">{{ config[form.category] }}</span>
-            &nbsp;名
-          </span>
-          <span :style="{ marginLeft: '20px' }">
-            剩余&nbsp;
-            <span class="colorred">{{ remain }}</span>
-            &nbsp;名
-          </span>
+        <el-form-item label=" " v-if="form.prizeName && selectedPrize">
+          <div>
+            <span>
+              奖品总数:&nbsp;
+              <span class="colorred">{{ selectedPrize.quantity }}</span>
+            </span>
+            <span :style="{ marginLeft: '20px' }">
+              剩余数量:&nbsp;
+              <span class="colorred">{{ remain }}</span>
+            </span>
+          </div>
+          <div :style="{ marginTop: '5px' }">
+            <span>
+              符合条件候选人:&nbsp;
+              <span class="colorred">{{ candidatesCount }}</span>
+            </span>
+          </div>
         </el-form-item>
 
         <el-form-item label="抽取方式">
@@ -63,13 +87,6 @@
           ></el-input>
         </el-form-item>
 
-        <el-form-item label="全员参与">
-          <el-switch v-model="form.allin"></el-switch>
-          <span :style="{ fontSize: '12px' }">
-            (开启后将在全体成员[无论有无中奖]中抽奖)
-          </span>
-        </el-form-item>
-
         <el-form-item>
           <el-button type="primary" @click="onSubmit">立即抽奖</el-button>
           <el-button @click="showSetwat = false">取消</el-button>
@@ -77,34 +94,13 @@
       </el-form>
     </el-dialog>
 
-    <el-dialog
-      :append-to-body="true"
-      :visible.sync="showImport"
-      class="import-dialog"
-      width="400px"
-    >
-      <el-input
-        type="textarea"
-        :rows="10"
-        placeholder="请输入对应的号码和名单(可直接从excel复制)，格式(号码 名字)，导入的名单将代替号码显示在抽奖中。如：
-1 张三
-2 李四
-3 王五
-				"
-        v-model="listStr"
-      ></el-input>
-      <div class="footer">
-        <el-button size="mini" type="primary" @click="transformList"
-          >确定</el-button
-        >
-        <el-button size="mini" @click="showImport = false">取消</el-button>
-      </div>
-    </el-dialog>
+    <!-- 导入照片对话框 -->
     <Importphoto
       :visible.sync="showImportphoto"
       @getPhoto="$emit('getPhoto')"
     ></Importphoto>
 
+    <!-- 重置选项对话框 -->
     <el-dialog
       :visible.sync="showRemoveoptions"
       width="300px"
@@ -116,9 +112,10 @@
           <el-radio-group v-model="removeInfo.type">
             <el-radio border :label="0">重置全部数据</el-radio>
             <el-radio border :label="1">重置抽奖配置</el-radio>
-            <el-radio border :label="2">重置名单</el-radio>
-            <el-radio border :label="3">重置照片</el-radio>
-            <el-radio border :label="4">重置抽奖结果</el-radio>
+            <el-radio border :label="2">重置人员名单</el-radio>
+            <el-radio border :label="3">重置奖品配置</el-radio>
+            <el-radio border :label="4">重置照片</el-radio>
+            <el-radio border :label="5">重置抽奖结果</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item>
@@ -135,10 +132,11 @@ import {
   clearData,
   removeData,
   configField,
-  listField,
   resultField,
-  conversionCategoryName
+  participantsField,
+  prizesField
 } from '@/helper/index';
+import { generateCandidates } from '@/helper/algorithm';
 import Importphoto from './Importphoto';
 import { database, DB_STORE_NAME } from '@/helper/db';
 
@@ -148,55 +146,67 @@ export default {
     closeRes: Function
   },
   computed: {
-    config: {
-      get() {
-        return this.$store.state.config;
-      }
+    config() {
+      return this.$store.state.config;
     },
-    remain() {
-      return (
-        this.config[this.form.category] -
-        (this.result[this.form.category]
-          ? this.result[this.form.category].length
-          : 0)
-      );
+    prizes() {
+      return this.$store.state.prizes;
+    },
+    participants() {
+      return this.$store.state.participants;
     },
     result() {
       return this.$store.state.result;
     },
-    categorys() {
-      const options = [];
-      for (const key in this.config) {
-        if (this.config.hasOwnProperty(key)) {
-          const item = this.config[key];
-          if (item > 0) {
-            let name = conversionCategoryName(key);
-            name &&
-              options.push({
-                label: name,
-                value: key
-              });
-          }
-        }
+    prizeLevels() {
+      return Object.keys(this.prizes);
+    },
+    currentPrizes() {
+      if (!this.form.prizeLevel) return [];
+      return this.prizes[this.form.prizeLevel] || [];
+    },
+    selectedPrize() {
+      if (!this.form.prizeLevel || !this.form.prizeName) return null;
+      const prizes = this.prizes[this.form.prizeLevel] || [];
+      return prizes.find(p => p.name === this.form.prizeName);
+    },
+    remain() {
+      if (!this.selectedPrize) return 0;
+      const levelResults = this.result[this.form.prizeLevel];
+      if (!levelResults) return this.selectedPrize.quantity;
+      const prizeResults = levelResults[this.form.prizeName] || [];
+      return this.selectedPrize.quantity - prizeResults.length;
+    },
+    candidatesCount() {
+      if (!this.selectedPrize) return 0;
+      try {
+        const candidates = generateCandidates(
+          this.form.prizeLevel,
+          this.form.prizeName,
+          this.selectedPrize,
+          this.participants,
+          this.result,
+          this.config
+        );
+        return candidates.length;
+      } catch (error) {
+        return 0;
       }
-      return options;
     }
   },
   components: { Importphoto },
   data() {
     return {
       showSetwat: false,
-      showImport: false,
       showImportphoto: false,
       showRemoveoptions: false,
       removeInfo: { type: 0 },
       form: {
-        category: '',
+        prizeLevel: '',
+        prizeName: '',
         mode: 1,
-        qty: 1,
-        allin: false
-      },
-      listStr: ''
+        qty: 1
+      }
     };
   },
   watch: {
@@ -207,6 +217,12 @@ export default {
     }
   },
   methods: {
+    onPrizeLevelChange() {
+      this.form.prizeName = '';
+    },
+    onPrizeNameChange() {
+      // 可以在这里添加额外逻辑
+    },
     resetConfig() {
       const type = this.removeInfo.type;
       this.$confirm('此操作将重置所选数据，是否继续?', '提示', {
@@ -226,14 +242,18 @@ export default {
               this.$store.commit('setClearConfig');
               break;
             case 2:
-              removeData(listField);
-              this.$store.commit('setClearList');
+              removeData(participantsField);
+              this.$store.commit('setClearParticipants');
               break;
             case 3:
+              removeData(prizesField);
+              this.$store.commit('setClearPrizes');
+              break;
+            case 4:
               database.clear(DB_STORE_NAME);
               this.$store.commit('setClearPhotos');
               break;
-            case 4:
+            case 5:
               removeData(resultField);
               this.$store.commit('setClearResult');
               break;
@@ -261,68 +281,69 @@ export default {
         });
     },
     onSubmit() {
-      if (!this.form.category) {
-        return this.$message.error('请选择本次抽取的奖项');
+      if (!this.form.prizeLevel) {
+        return this.$message.error('请选择奖品等级');
+      }
+      if (!this.form.prizeName) {
+        return this.$message.error('请选择具体奖品');
       }
       if (this.remain <= 0) {
-        return this.$message.error('该奖项剩余人数不足');
+        return this.$message.error('该奖品剩余数量不足');
       }
+      if (this.candidatesCount === 0) {
+        return this.$message.error('没有符合条件的候选人');
+      }
+
+      let num = 1;
+      if (this.form.mode === 1 || this.form.mode === 5) {
+        num = this.form.mode;
+      } else if (this.form.mode === 0) {
+        num = this.remain;
+      } else if (this.form.mode === 99) {
+        num = parseInt(this.form.qty);
+      }
+
       if (this.form.mode === 99) {
-        if (this.form.qty <= 0) {
+        if (num <= 0) {
           return this.$message.error('必须输入本次抽取人数');
         }
-        if (this.form.qty > this.remain) {
-          return this.$message.error('本次抽奖人数已超过本奖项的剩余人数');
+        if (num > this.remain) {
+          return this.$message.error('本次抽奖人数已超过本奖品的剩余数量');
         }
       }
-      if (this.form.mode === 1 || this.form.mode === 5) {
-        if (this.form.mode > this.remain) {
-          return this.$message.error('本次抽奖人数已超过本奖项的剩余人数');
-        }
+
+      if ((this.form.mode === 1 || this.form.mode === 5) && num > this.remain) {
+        return this.$message.error('本次抽奖人数已超过本奖品的剩余数量');
       }
+
+      if (num > this.candidatesCount) {
+        return this.$message.error(
+          `抽取人数(${num})超过符合条件的候选人数量(${this.candidatesCount})`
+        );
+      }
+
       this.showSetwat = false;
-      this.$emit(
-        'toggle',
-        Object.assign({}, this.form, { remain: this.remain })
-      );
+      this.$emit('toggle', {
+        prizeLevel: this.form.prizeLevel,
+        prizeName: this.form.prizeName,
+        prize: this.selectedPrize,
+        num: num,
+        remain: this.remain
+      });
     },
     startHandler() {
       this.$emit('toggle');
       if (!this.running) {
+        if (this.participants.length === 0) {
+          this.$message.error('请先在抽奖配置中导入人员名单');
+          return;
+        }
+        if (Object.keys(this.prizes).length === 0) {
+          this.$message.error('请先在抽奖配置中导入奖品配置');
+          return;
+        }
         this.showSetwat = true;
       }
-    },
-    transformList() {
-      const { listStr } = this;
-      if (!listStr) {
-        this.$message.error('没有数据');
-      }
-      const list = [];
-      const rows = listStr.split('\n');
-      if (rows && rows.length > 0) {
-        rows.forEach(item => {
-          const rowList = item.split(/\t|\s/);
-          if (rowList.length >= 2) {
-            const key = Number(rowList[0].trim());
-            const name = rowList[1].trim();
-            key &&
-              list.push({
-                key,
-                name
-              });
-          }
-        });
-      }
-      this.$store.commit('setList', list);
-
-      this.$message({
-        message: '保存成功',
-        type: 'success'
-      });
-      this.showImport = false;
-      this.$nextTick(() => {
-        this.$emit('resetConfig');
-      });
     }
   }
 };
@@ -350,16 +371,9 @@ export default {
     font-weight: bold;
   }
 }
-.import-dialog {
-  .footer {
-    height: 50px;
-    line-height: 50px;
-    text-align: center;
-  }
-}
 .c-removeoptions {
   .el-dialog {
-    height: 290px;
+    height: 350px;
   }
   .el-radio.is-bordered + .el-radio.is-bordered {
     margin-left: 0px;
