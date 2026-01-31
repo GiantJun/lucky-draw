@@ -1,6 +1,7 @@
 ## 年会抽奖
 
-[演示地址](https://vitozyf.github.io/lucky-draw/index.html#/?tdsourcetag=s_pctim_aiomsg)
+[魔改版演示地址](https://GiantJun.github.io/lucky-draw/
+)
 
 ## 功能特色
 
