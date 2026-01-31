@@ -42,19 +42,24 @@
             <span class="cont" v-if="!item.photo">
               <span
                 :style="{
-                  fontSize: '40px',
+                  fontSize: item.prizeName ? '30px' : '40px',
                 }"
               >
                 {{ item.displayName }}
+                <span v-if="item.prizeName" :style="{ display: 'block', fontSize: '20px', color: '#ff6b6b', marginTop: '10px' }">
+                  {{ item.prizeName }}
+                </span>
               </span>
             </span>
-            <img
-              v-if="item.photo"
-              :src="item.photo"
-              alt="photo"
-              :width="160"
-              :height="160"
-            />
+            <span v-if="item.photo" class="photo-wrapper">
+              <img
+                :src="item.photo"
+                alt="photo"
+                :width="160"
+                :height="160"
+              />
+              <span v-if="item.prizeName" class="prize-label">{{ item.prizeName }}</span>
+            </span>
           </span>
         </div>
       </div>
@@ -360,7 +365,7 @@ export default {
         this.audioSrc = beginaudio;
         this.loadAudio();
 
-        const { prizeLevel, prizeName, prize, num } = form;
+        const { prizeLevel, prizeName, prize, num, isLevelDraw, prizes } = form;
 
         // 保存当前抽奖信息
         this.currentPrizeLevel = prizeLevel;
@@ -368,6 +373,116 @@ export default {
         this.currentPrize = prize;
 
         try {
+          // 如果是整个等级的抽奖（特一二等奖）
+          if (isLevelDraw && prizes) {
+            // 合并该等级所有奖品的候选人
+            const allCandidatesMap = new Map();
+            prizes.forEach(p => {
+              try {
+                const candidates = generateCandidates(
+                  prizeLevel,
+                  p.name,
+                  p,
+                  this.participants,
+                  this.result,
+                  this.config
+                );
+                candidates.forEach(candidate => {
+                  // 使用 displayName 作为唯一键，避免重复
+                  if (!allCandidatesMap.has(candidate.displayName)) {
+                    allCandidatesMap.set(candidate.displayName, candidate);
+                  }
+                });
+              } catch (error) {
+                console.error(`生成奖品 ${p.name} 候选人失败:`, error);
+              }
+            });
+
+            const allCandidates = Array.from(allCandidatesMap.values());
+
+            if (allCandidates.length < num) {
+              this.$message.error('符合条件的候选人数量不足');
+              return;
+            }
+
+            // 保存候选人用于显示
+            this.currentCandidates = allCandidates;
+
+            // 随机抽取中奖者
+            const winners = randomSelectWinners(allCandidates, num);
+
+            // 按顺序分配奖品
+            let winnerIndex = 0;
+            const prizeWinnersMap = {}; // 记录每个奖品的中奖者
+
+            for (const p of prizes) {
+              // 计算该奖品还剩多少数量
+              const levelResults = this.result[prizeLevel];
+              let prizeRemain = p.quantity;
+              if (levelResults && levelResults[p.name]) {
+                prizeRemain = p.quantity - levelResults[p.name].length;
+              }
+
+              // 分配中奖者给该奖品
+              const prizeWinners = [];
+              for (let i = 0; i < prizeRemain && winnerIndex < winners.length; i++) {
+                prizeWinners.push(winners[winnerIndex]);
+                winnerIndex++;
+              }
+
+              if (prizeWinners.length > 0) {
+                prizeWinnersMap[p.name] = prizeWinners;
+              }
+            }
+
+            // 添加照片信息并标记奖品名称
+            this.resArr = winners.map((winner) => {
+              const photo = this.photos.find((d) => d.name === winner.realName);
+
+              // 找到该中奖者对应的奖品
+              let assignedPrizeName = '';
+              for (const [pName, pWinners] of Object.entries(prizeWinnersMap)) {
+                if (pWinners.some(w => w.displayName === winner.displayName)) {
+                  assignedPrizeName = pName;
+                  break;
+                }
+              }
+
+              return {
+                ...winner,
+                photo: photo ? photo.value : null,
+                prizeName: assignedPrizeName // 添加奖品名称
+              };
+            });
+
+            // 保存结果到store
+            if (!this.result[prizeLevel]) {
+              this.$set(this.result, prizeLevel, {});
+            }
+
+            const newResult = Object.assign({}, this.result);
+
+            // 将中奖者按奖品分类保存
+            for (const [pName, pWinners] of Object.entries(prizeWinnersMap)) {
+              if (!newResult[prizeLevel][pName]) {
+                this.$set(newResult[prizeLevel], pName, []);
+              }
+              const oldRes = newResult[prizeLevel][pName] || [];
+              newResult[prizeLevel][pName] = oldRes.concat(pWinners);
+            }
+
+            this.result = newResult;
+
+            window.TagCanvas.SetSpeed('rootcanvas', [5, 1]);
+            this.running = !this.running;
+
+            this.$nextTick(() => {
+              this.reloadTagCanvas();
+            });
+            return;
+          }
+
+          // 原有的单个奖品抽奖逻辑
           // 生成候选人名单
           const candidates = generateCandidates(
             prizeLevel,
@@ -526,6 +641,26 @@ export default {
       display: flex;
       justify-content: center;
       align-items: center;
+      flex-direction: column;
+      line-height: normal;
+    }
+    .photo-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .prize-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 107, 107, 0.9);
+      color: white;
+      font-size: 12px;
+      padding: 2px 5px;
+      text-align: center;
+      line-height: normal;
     }
     &.numberOver::before {
       content: attr(data-id);
