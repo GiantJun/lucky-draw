@@ -14,6 +14,7 @@ export default new Vuex.Store({
     config: {
       name: '年会抽奖',
       enableExtraTimes: true,      // 额外抽奖次数功能开关
+      extraTimesLevels: ['特等奖', '一等奖', '二等奖'], // 额外抽奖次数生效的等级（默认不包含三等奖）
       winnerExcludesAll: true       // 一人中奖全部失效开关
     },
     result: {},  // 格式: { '特等奖': { 'iPhone 15 Pro': [{displayName, realName}] } }
@@ -26,6 +27,7 @@ export default new Vuex.Store({
       state.config = {
         name: '年会抽奖',
         enableExtraTimes: true,
+        extraTimesLevels: ['特等奖', '一等奖', '二等奖'],
         winnerExcludesAll: true
       };
     },
@@ -48,6 +50,7 @@ export default new Vuex.Store({
       state.config = {
         name: '年会抽奖',
         enableExtraTimes: true,
+        extraTimesLevels: ['特等奖', '一等奖', '二等奖'],
         winnerExcludesAll: true
       };
       state.result = {};

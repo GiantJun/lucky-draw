@@ -97,8 +97,11 @@ export function isEligible(personType, eligibility) {
  * @returns {array} 候选人列表
  */
 export function generateCandidates(prizeLevel, prizeName, prize, participants, results, config) {
-  const { enableExtraTimes, winnerExcludesAll } = config;
+  const { enableExtraTimes, extraTimesLevels = [], winnerExcludesAll } = config;
   const candidates = [];
+
+  // 判断当前奖品等级是否应用额外抽奖次数
+  const shouldApplyExtraTimes = enableExtraTimes && extraTimesLevels.includes(prizeLevel);
 
   participants.forEach(person => {
     // 1. 检查该人员工类型是否符合该奖品要求
@@ -106,8 +109,8 @@ export function generateCandidates(prizeLevel, prizeName, prize, participants, r
       return; // 不符合，跳过
     }
 
-    // 2. 根据额外抽奖次数生成候选名
-    if (enableExtraTimes && person.extraTimes > 0) {
+    // 2. 根据配置决定是否应用额外抽奖次数
+    if (shouldApplyExtraTimes && person.extraTimes > 0) {
       // 生成多个候选名: 张三1, 张三2
       for (let i = 1; i <= person.extraTimes; i++) {
         const displayName = `${person.name}${i}`;
@@ -124,7 +127,7 @@ export function generateCandidates(prizeLevel, prizeName, prize, participants, r
         });
       }
     } else {
-      // extraTimes = 0 或功能关闭，只生成一个候选名(不带数字后缀)
+      // 不应用额外抽奖次数：只生成一个候选名(不带数字后缀)
       const displayName = person.name;
 
       // 检查是否已中奖

@@ -32,6 +32,23 @@
           </div>
         </el-form-item>
 
+        <el-form-item label="生效的奖品等级" v-if="form.enableExtraTimes">
+          <el-select
+            v-model="form.extraTimesLevels"
+            multiple
+            placeholder="请选择生效等级"
+            :style="{ width: '100%' }"
+          >
+            <el-option label="特等奖" value="特等奖"></el-option>
+            <el-option label="一等奖" value="一等奖"></el-option>
+            <el-option label="二等奖" value="二等奖"></el-option>
+            <el-option label="三等奖" value="三等奖"></el-option>
+          </el-select>
+          <div :style="{ fontSize: '12px', color: '#999', marginTop: '5px' }">
+            只有被选中的等级才会应用额外抽奖次数
+          </div>
+        </el-form-item>
+
         <el-form-item label="一人中奖全部失效">
           <el-switch v-model="form.winnerExcludesAll"></el-switch>
           <div :style="{ fontSize: '12px', color: '#999', marginTop: '5px' }">
