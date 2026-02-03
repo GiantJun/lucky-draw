@@ -12,7 +12,7 @@
       :append-to-body="true"
       :visible.sync="showSetwat"
       class="setwat-dialog"
-      width="450px"
+      width="500px"
     >
       <el-form ref="form" :model="form" label-width="100px" size="mini">
         <el-form-item label="奖品等级">
@@ -418,6 +418,29 @@ export default {
   .el-button + .el-button {
     margin-top: 20px;
     margin-left: 0px;
+  }
+
+  // 响应式：小屏幕下调整按钮大小
+  @media (max-width: 768px) {
+    right: 10px;
+
+    .el-button {
+      &:first-child {
+        width: 100px;
+        height: 100px;
+        font-size: 16px;
+      }
+
+      &:not(:first-child) {
+        width: 70px;
+        height: 70px;
+        font-size: 13px;
+      }
+    }
+
+    .el-button + .el-button {
+      margin-top: 15px;
+    }
   }
 }
 

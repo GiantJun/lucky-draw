@@ -247,6 +247,7 @@ export default {
       currentPrize: null,
       audioPlaying: false,
       audioSrc: bgaudio,
+      resizeTimer: null
     };
   },
 
@@ -268,15 +269,24 @@ export default {
 
   beforeDestroy() {
     window.removeEventListener('resize', this.reportWindowSize);
+    if (this.resizeTimer) {
+      clearTimeout(this.resizeTimer);
+    }
   },
 
   methods: {
     reportWindowSize() {
-      const AppCanvas = this.$el.querySelector('#rootcanvas');
-      if (AppCanvas && AppCanvas.parentElement) {
-        AppCanvas.parentElement.removeChild(AppCanvas);
+      // 防抖处理，避免频繁resize时重复创建
+      if (this.resizeTimer) {
+        clearTimeout(this.resizeTimer);
       }
-      this.startTagCanvas();
+      this.resizeTimer = setTimeout(() => {
+        const stageContainer = this.$el.querySelector('#lottery-stage');
+        if (stageContainer && stageContainer.parentElement) {
+          stageContainer.parentElement.removeChild(stageContainer);
+        }
+        this.startTagCanvas();
+      }, 300);
     },
     playHandler() {
       this.audioPlaying = true;
@@ -308,10 +318,53 @@ export default {
       stageContainer.className = 'lottery-stage';
       stageContainer.id = 'lottery-stage';
 
-      // 创建canvas
+      // 创建canvas - 根据视窗大小动态计算尺寸
       const canvas = document.createElement('canvas');
-      canvas.width = 1000;  // 固定宽度
-      canvas.height = 600;  // 固定高度
+
+      // 计算Canvas尺寸：取视窗宽高的较小值作为基准，留出边距
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // 响应式预留空间
+      let headerHeight = 80;
+      let sideMargin = 180; // 左右边距 + 右侧按钮区域
+      let bottomMargin = 40;
+
+      // 小屏幕适配
+      if (viewportWidth <= 768) {
+        headerHeight = 60;
+        sideMargin = 120;
+        bottomMargin = 30;
+      }
+      if (viewportWidth <= 480) {
+        sideMargin = 80;
+        bottomMargin = 20;
+      }
+
+      const availableWidth = viewportWidth - sideMargin;
+      const availableHeight = viewportHeight - headerHeight - bottomMargin;
+
+      // 保持16:10的宽高比，优先使用可用宽度的80-90%
+      let canvasWidth = availableWidth * 0.85;
+      let canvasHeight = canvasWidth * 0.6;
+
+      // 如果高度超出可用高度，则以高度为准重新计算
+      if (canvasHeight > availableHeight * 0.85) {
+        canvasHeight = availableHeight * 0.85;
+        canvasWidth = canvasHeight / 0.6;
+      }
+
+      // 设置响应式最小和最大尺寸
+      const minWidth = viewportWidth <= 480 ? 300 : (viewportWidth <= 768 ? 400 : 500);
+      const minHeight = minWidth * 0.6;
+      const maxWidth = viewportWidth <= 768 ? availableWidth * 0.95 : availableWidth * 0.9;
+      const maxHeight = maxWidth * 0.6;
+
+      canvasWidth = Math.max(minWidth, Math.min(canvasWidth, maxWidth));
+      canvasHeight = Math.max(minHeight, Math.min(canvasHeight, maxHeight));
+
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
       canvas.id = 'rootcanvas';
 
       stageContainer.appendChild(canvas);
@@ -631,6 +684,25 @@ export default {
         right: 180px;
       }
     }
+
+    // 响应式：小屏幕下调整按钮位置和大小
+    @media (max-width: 768px) {
+      height: 60px;
+      line-height: 60px;
+
+      .el-button {
+        padding: 8px 15px;
+        font-size: 14px;
+        top: 10px;
+
+        &.con {
+          right: 10px;
+        }
+        &.res {
+          right: 140px;
+        }
+      }
+    }
   }
 
   .audio {
@@ -659,6 +731,19 @@ export default {
       position: relative;
       left: 1px;
       font-size: 20px;
+    }
+
+    // 响应式：小屏幕下调整音频按钮
+    @media (max-width: 768px) {
+      top: 70px;
+      right: 15px;
+      width: 40px;
+      height: 40px;
+      line-height: 40px;
+
+      .iconfont {
+        font-size: 16px;
+      }
     }
   }
 
@@ -695,8 +780,6 @@ export default {
 // 磨砂玻璃容器样式 - 通过JS动态添加
 .lottery-stage {
   position: relative;
-  width: 1000px;
-  height: 600px;
   margin: 0 auto;
   background: rgba(45, 27, 78, 0.4);
   backdrop-filter: blur(20px);
@@ -709,8 +792,15 @@ export default {
   overflow: hidden;
   @include breathing-border(3s);
 
+  // 尺寸由canvas内容撑开
+  display: inline-block;
+
   &.active {
     @include breathing-border-fast;
+  }
+
+  canvas {
+    display: block;
   }
 }
 
@@ -720,6 +810,7 @@ export default {
   left: 50%;
   width: 1280px;
   max-width: 90vw;
+  max-height: 85vh;
   transform: translateX(-50%) translateY(-50%);
   text-align: center;
   background: rgba(26, 11, 46, 0.95);
@@ -729,6 +820,17 @@ export default {
   padding: 40px 20px;
   box-shadow: 0 0 80px rgba(249, 215, 28, 0.4);
   z-index: 100;
+  overflow-y: auto;
+
+  // 响应式：小屏幕下调整padding
+  @media (max-width: 768px) {
+    padding: 30px 15px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 20px 10px;
+    max-width: 95vw;
+  }
 
   p {
     color: $huya-yellow-bright;
@@ -738,13 +840,50 @@ export default {
     margin-bottom: 30px;
     @include neon-text-glow($huya-yellow);
     cursor: pointer;
+
+    // 响应式字体大小
+    @media (max-width: 768px) {
+      font-size: 28px;
+      line-height: 40px;
+    }
   }
 
   .container {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 180px));
+    max-width: fit-content;
+    margin: 0 auto;
     gap: 20px;
+    justify-content: center;
+
+    // 限制最多5列
+    @media (min-width: 1201px) {
+      grid-template-columns: repeat(auto-fit, minmax(180px, calc((100% - 80px) / 5)));
+      max-width: calc(180px * 5 + 20px * 4);
+    }
+
+    // 响应式：小屏幕下调整列数和间距
+    @media (max-width: 1200px) {
+      grid-template-columns: repeat(auto-fit, minmax(180px, calc((100% - 60px) / 4)));
+      max-width: calc(180px * 4 + 20px * 3);
+    }
+
+    @media (max-width: 900px) {
+      grid-template-columns: repeat(auto-fit, minmax(140px, calc((100% - 30px) / 3)));
+      max-width: calc(140px * 3 + 15px * 2);
+      gap: 15px;
+    }
+
+    @media (max-width: 600px) {
+      grid-template-columns: repeat(auto-fit, minmax(120px, calc((100% - 10px) / 2)));
+      max-width: calc(120px * 2 + 10px * 1);
+      gap: 10px;
+    }
+
+    @media (max-width: 400px) {
+      grid-template-columns: 1fr;
+      max-width: 180px;
+    }
   }
 
   .itemres {
@@ -774,6 +913,17 @@ export default {
       transform: translateY(-5px) scale(1.05);
       border-color: rgba(249, 215, 28, 1);
       box-shadow: 0 8px 30px rgba(249, 215, 28, 0.5);
+    }
+
+    // 响应式：小屏幕下调整卡片大小
+    @media (max-width: 768px) {
+      width: 140px;
+      height: 200px;
+    }
+
+    @media (max-width: 480px) {
+      width: 120px;
+      height: 180px;
     }
 
     .cont {
