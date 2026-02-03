@@ -115,10 +115,13 @@ import bgaudio from '@/assets/bg.mp3';
 import beginaudio from '@/assets/begin.mp3';
 import {
   getData,
+  setData,
   configField,
   resultField,
   participantsField,
-  prizesField
+  prizesField,
+  defaultParticipants,
+  defaultPrizes
 } from '@/helper/index';
 import { generateCandidates, randomSelectWinners } from '@/helper/algorithm';
 import Result from '@/components/Result';
@@ -226,11 +229,19 @@ export default {
     const participants = getData(participantsField);
     if (participants) {
       this.$store.commit('setParticipants', participants);
+    } else {
+      // 如果没有人员名单，使用默认配置
+      this.$store.commit('setParticipants', defaultParticipants);
+      setData(participantsField, defaultParticipants);
     }
 
     const prizes = getData(prizesField);
     if (prizes) {
       this.$store.commit('setPrizes', prizes);
+    } else {
+      // 如果没有奖品配置，使用默认配置
+      this.$store.commit('setPrizes', defaultPrizes);
+      setData(prizesField, defaultPrizes);
     }
   },
 

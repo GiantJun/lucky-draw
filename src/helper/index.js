@@ -40,6 +40,58 @@ export const prizesField = 'prizes'; // 奖品配置
 export const newLotteryField = 'newLottery'; // 新增奖项（保留兼容）
 export const listField = 'list'; // 名单（保留兼容）
 
+// 默认人员名单配置（20个正职人员，额外抽奖次数都是3）
+export const defaultParticipants = [
+  { name: '张三', type: '正职', extraTimes: 3 },
+  { name: '李四', type: '正职', extraTimes: 3 },
+  { name: '王五', type: '正职', extraTimes: 3 },
+  { name: '赵六', type: '正职', extraTimes: 3 },
+  { name: '孙七', type: '正职', extraTimes: 3 },
+  { name: '周八', type: '正职', extraTimes: 3 },
+  { name: '吴九', type: '正职', extraTimes: 3 },
+  { name: '郑十', type: '正职', extraTimes: 3 },
+  { name: '钱一', type: '正职', extraTimes: 3 },
+  { name: '陈二', type: '正职', extraTimes: 3 },
+  { name: '刘三', type: '正职', extraTimes: 3 },
+  { name: '杨四', type: '正职', extraTimes: 3 },
+  { name: '黄五', type: '正职', extraTimes: 3 },
+  { name: '朱六', type: '正职', extraTimes: 3 },
+  { name: '林七', type: '正职', extraTimes: 3 },
+  { name: '何八', type: '正职', extraTimes: 3 },
+  { name: '徐九', type: '正职', extraTimes: 3 },
+  { name: '马十', type: '正职', extraTimes: 3 },
+  { name: '梁一', type: '正职', extraTimes: 3 },
+  { name: '宋二', type: '正职', extraTimes: 3 }
+];
+
+// 默认奖品配置
+export const defaultPrizes = {
+  '特等奖': [
+    { name: 'iPad Air', quantity: 1, eligibility: '正职' }
+  ],
+  '一等奖': [
+    { name: 'vivo X300(12+512)', quantity: 1, eligibility: '正职' },
+    { name: 'oppo fine x8', quantity: 1, eligibility: '正职' },
+    { name: '荣耀400', quantity: 1, eligibility: '正职' },
+    { name: '华为nova flip', quantity: 1, eligibility: '正职' },
+    { name: '大疆action5(畅拍套装)', quantity: 1, eligibility: '正职' },
+    { name: '影视360 ACE pro2 玩拍套装', quantity: 1, eligibility: '正职' }
+  ],
+  '二等奖': [
+    { name: '哈曼卡顿琉璃玻璃5', quantity: 1, eligibility: '正职' },
+    { name: '富士wide400(带相纸)', quantity: 1, eligibility: '正职' },
+    { name: '石头内衣洗烘一体机', quantity: 1, eligibility: '正职' },
+    { name: 'xiaomi pad 8 pro', quantity: 1, eligibility: '正职' },
+    { name: '马歇尔STANMORE III音箱', quantity: 1, eligibility: '正职' }
+  ],
+  '三等奖': [
+    { name: '美的空气炸锅', quantity: 5, eligibility: '全部' },
+    { name: '徕芬吹风机SE2', quantity: 5, eligibility: '全部' },
+    { name: '亚朵星球深睡枕PRO', quantity: 5, eligibility: '全部' },
+    { name: '乐高法拉利跑车', quantity: 5, eligibility: '全部' }
+  ]
+};
+
 /**
  * 解析人员CSV内容
  * @param {string} csvContent CSV文件内容
