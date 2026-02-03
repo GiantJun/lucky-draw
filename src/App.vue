@@ -16,7 +16,7 @@
           <a
             href="javascript:void(0);"
             :style="{
-              color: '#fff',
+              color: '#ffd700',
             }"
           >
             {{ item.displayName }}
@@ -45,7 +45,7 @@
                   fontSize: item.prizeName ? '30px' : '40px',
                 }"
               >
-                {{ item.displayName }}
+                {{ item.realName }}
                 <span v-if="item.prizeName" :style="{ display: 'block', fontSize: '20px', color: '#ff6b6b', marginTop: '10px' }">
                   {{ item.prizeName }}
                 </span>
@@ -84,14 +84,13 @@
     <Tool
       @toggle="toggle"
       @resetConfig="reloadTagCanvas"
-      @getPhoto="getPhoto"
       :running="running"
       :closeRes="closeRes"
     />
     <Result :visible.sync="showResult"></Result>
 
     <span class="copy-right">
-      Copyright©zhangyongfeng5350@gmail.com
+      Copyright©GiantJun
     </span>
 
     <audio
@@ -123,7 +122,6 @@ import {
 } from '@/helper/index';
 import { generateCandidates, randomSelectWinners } from '@/helper/algorithm';
 import Result from '@/components/Result';
-import { database, DB_STORE_NAME } from '@/helper/db';
 
 export default {
   name: 'App',
@@ -265,9 +263,6 @@ export default {
 
   mounted() {
     this.startTagCanvas();
-    setTimeout(() => {
-      this.getPhoto();
-    }, 1000);
     window.addEventListener('resize', this.reportWindowSize);
   },
 
@@ -302,33 +297,46 @@ export default {
         this.$el.querySelector('#audiobg').play();
       });
     },
-    getPhoto() {
-      database.getAll(DB_STORE_NAME).then((res) => {
-        if (res && res.length > 0) {
-          this.$store.commit('setPhotos', res);
-        }
-      });
-    },
     speed() {
       return [0.1 * Math.random() + 0.01, -(0.1 * Math.random() + 0.01)];
     },
     createCanvas() {
+      const mainContainer = this.$el.querySelector('#main');
+
+      // 创建磨砂玻璃容器
+      const stageContainer = document.createElement('div');
+      stageContainer.className = 'lottery-stage';
+      stageContainer.id = 'lottery-stage';
+
+      // 创建canvas
       const canvas = document.createElement('canvas');
-      canvas.width = document.body.offsetWidth;
-      canvas.height = document.body.offsetHeight;
+      canvas.width = 1000;  // 固定宽度
+      canvas.height = 600;  // 固定高度
       canvas.id = 'rootcanvas';
-      this.$el.querySelector('#main').appendChild(canvas);
+
+      stageContainer.appendChild(canvas);
+      mainContainer.appendChild(stageContainer);
     },
     startTagCanvas() {
       this.createCanvas();
       const { speed } = this;
       window.TagCanvas.Start('rootcanvas', 'tags', {
-        textColour: null,
+        textColour: '#ffd700',  // 虎牙黄
+        outlineColour: '#fff',
+        outlineThickness: 2,
         initial: speed(),
         dragControl: 1,
         textHeight: 20,
         noSelect: true,
         lock: 'xy',
+        depth: 0.8,
+        maxSpeed: 0.05,
+        minSpeed: 0.01,
+        decel: 0.98,
+        weight: true,
+        weightMode: 'both',
+        shadowBlur: 3,
+        shadowOffset: [0, 0]
       });
     },
     reloadTagCanvas() {
@@ -339,11 +347,17 @@ export default {
     },
     toggle(form) {
       const { speed } = this;
+      const stageContainer = this.$el.querySelector('#lottery-stage');
 
       if (this.running) {
         // 停止抽奖
         this.audioSrc = bgaudio;
         this.loadAudio();
+
+        // 移除active类，恢复正常呼吸灯
+        if (stageContainer) {
+          stageContainer.classList.remove('active');
+        }
 
         window.TagCanvas.SetSpeed('rootcanvas', speed());
         this.showRes = true;
@@ -364,6 +378,11 @@ export default {
 
         this.audioSrc = beginaudio;
         this.loadAudio();
+
+        // 添加active类，加快呼吸灯
+        if (stageContainer) {
+          stageContainer.classList.add('active');
+        }
 
         const { prizeLevel, prizeName, prize, num, isLevelDraw, prizes } = form;
 
@@ -400,16 +419,38 @@ export default {
 
             const allCandidates = Array.from(allCandidatesMap.values());
 
-            if (allCandidates.length < num) {
-              this.$message.error('符合条件的候选人数量不足');
+            // 计算去重后的实际候选人数（按真实姓名）
+            const uniqueRealNames = new Set(allCandidates.map(c => c.realName));
+            if (uniqueRealNames.size < num) {
+              this.$message.error(`符合条件的不同候选人只有 ${uniqueRealNames.size} 人，少于需要抽取的 ${num} 个奖品数量`);
               return;
             }
 
             // 保存候选人用于显示
             this.currentCandidates = allCandidates;
 
-            // 随机抽取中奖者
-            const winners = randomSelectWinners(allCandidates, num);
+            // 随机抽取中奖者，确保同一个人（realName）不会中多次
+            const winners = [];
+            const selectedRealNames = new Set();
+            const selectedIndices = new Set();
+            const { randomNum } = require('@/helper/algorithm');
+
+            while (winners.length < num) {
+              const index = randomNum(0, allCandidates.length - 1);
+
+              if (selectedIndices.has(index)) {
+                continue;
+              }
+
+              const candidate = allCandidates[index];
+
+              // 检查是否已经有相同的 realName
+              if (!selectedRealNames.has(candidate.realName)) {
+                selectedIndices.add(index);
+                selectedRealNames.add(candidate.realName);
+                winners.push(candidate);
+              }
+            }
 
             // 按顺序分配奖品
             let winnerIndex = 0;
@@ -542,58 +583,94 @@ export default {
 };
 </script>
 <style lang="scss">
+@import '@/assets/style/theme.scss';
+
 #root {
   height: 100%;
   position: relative;
-  background-image: url('./assets/bg1.jpg');
-  background-size: 100% 100%;
-  background-position: center center;
-  background-repeat: no-repeat;
-  background-color: #121936;
+  background: $bg-gradient;
+  background-attachment: fixed;
+  overflow: hidden;
+
   .mask {
     -webkit-filter: blur(5px);
     filter: blur(5px);
   }
+
   header {
-    height: 50px;
-    line-height: 50px;
+    height: 80px;
+    line-height: 80px;
     position: relative;
+    z-index: 1000;
+    @include glassmorphism;
+    border-bottom: 1px solid rgba(249, 215, 28, 0.2);
+
     .el-button {
       position: absolute;
-      top: 17px;
-      padding: 0;
+      top: 15px;
+      padding: 10px 20px;
       z-index: 9999;
+      @include glassmorphism;
+      border: 1px solid rgba(249, 215, 28, 0.3);
+      border-radius: 10px;
+      color: $huya-yellow-bright;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: rgba(249, 215, 28, 0.8);
+        @include neon-glow($huya-yellow, 0.5);
+        transform: translateY(-2px);
+      }
+
       &.con {
         right: 20px;
       }
       &.res {
-        right: 100px;
+        right: 180px;
       }
     }
   }
+
   .audio {
     position: absolute;
     top: 100px;
     right: 30px;
-    width: 40px;
-    height: 40px;
-    line-height: 40px;
-    border: 1px solid #fff;
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
+    border: 2px solid rgba(249, 215, 28, 0.5);
     border-radius: 50%;
     padding: 0;
     text-align: center;
+    background: rgba(45, 27, 78, 0.6);
+    backdrop-filter: blur(10px);
+    color: $huya-yellow-bright;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: rgba(249, 215, 28, 1);
+      @include neon-glow($huya-yellow, 0.8);
+      transform: scale(1.1);
+    }
+
     .iconfont {
       position: relative;
       left: 1px;
+      font-size: 20px;
     }
   }
+
   .copy-right {
     position: absolute;
-    right: 0;
-    bottom: 0;
-    color: #ccc;
+    right: 10px;
+    bottom: 10px;
+    color: $text-secondary;
     font-size: 12px;
+    opacity: 0.6;
   }
+
   .bounce-enter-active {
     animation: bounce-in 1.5s;
   }
@@ -601,8 +678,40 @@ export default {
     animation: bounce-in 0s reverse;
   }
 }
+
 #main {
   height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  // 为 Canvas 容器添加磨砂玻璃外壳
+  canvas {
+    border-radius: 20px;
+  }
+}
+
+// 磨砂玻璃容器样式 - 通过JS动态添加
+.lottery-stage {
+  position: relative;
+  width: 1000px;
+  height: 600px;
+  margin: 0 auto;
+  background: rgba(45, 27, 78, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2px solid rgba(249, 215, 28, 0.3);
+  border-radius: 20px;
+  box-shadow:
+    0 0 40px rgba(249, 215, 28, 0.2),
+    inset 0 0 60px rgba(45, 27, 78, 0.8);
+  overflow: hidden;
+  @include breathing-border(3s);
+
+  &.active {
+    @include breathing-border-fast;
+  }
 }
 
 #resbox {
@@ -610,69 +719,117 @@ export default {
   top: 50%;
   left: 50%;
   width: 1280px;
+  max-width: 90vw;
   transform: translateX(-50%) translateY(-50%);
   text-align: center;
+  background: rgba(26, 11, 46, 0.95);
+  backdrop-filter: blur(30px);
+  border: 2px solid rgba(249, 215, 28, 0.6);
+  border-radius: 20px;
+  padding: 40px 20px;
+  box-shadow: 0 0 80px rgba(249, 215, 28, 0.4);
+  z-index: 100;
+
   p {
-    color: red;
-    font-size: 50px;
-    line-height: 120px;
+    color: $huya-yellow-bright;
+    font-size: 40px;
+    line-height: 60px;
+    font-weight: bold;
+    margin-bottom: 30px;
+    @include neon-text-glow($huya-yellow);
+    cursor: pointer;
   }
+
   .container {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
+    gap: 20px;
   }
+
   .itemres {
-    background: #fff;
-    width: 160px;
-    height: 160px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    line-height: 160px;
+    background: rgba(45, 27, 78, 0.8);
+    backdrop-filter: blur(15px);
+    width: 180px;
+    height: 240px;
+    border-radius: 15px;
+    border: 2px solid rgba(249, 215, 28, 0.5);
     font-weight: bold;
-    margin-right: 20px;
-    margin-bottom: 20px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
+    animation: card-pop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transition: all 0.3s ease;
+    color: $text-primary;
+
+    @for $i from 1 through 20 {
+      &:nth-child(#{$i}) {
+        animation-delay: #{$i * 0.15}s;
+      }
+    }
+
+    &:hover {
+      transform: translateY(-5px) scale(1.05);
+      border-color: rgba(249, 215, 28, 1);
+      box-shadow: 0 8px 30px rgba(249, 215, 28, 0.5);
+    }
+
     .cont {
       display: flex;
       justify-content: center;
       align-items: center;
       flex-direction: column;
       line-height: normal;
+      padding: 15px;
+      text-align: center;
     }
+
     .photo-wrapper {
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
+      width: 100%;
+      height: 100%;
+
+      img {
+        border-radius: 10px;
+        object-fit: cover;
+      }
     }
+
     .prize-label {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      background: rgba(255, 107, 107, 0.9);
-      color: white;
-      font-size: 12px;
-      padding: 2px 5px;
+      background: linear-gradient(135deg, #f9d71c 0%, #ffd700 100%);
+      color: $huya-purple-dark;
+      font-size: 14px;
+      font-weight: bold;
+      padding: 8px 5px;
       text-align: center;
       line-height: normal;
+      border-bottom-left-radius: 13px;
+      border-bottom-right-radius: 13px;
     }
+
     &.numberOver::before {
       content: attr(data-id);
       width: 30px;
       height: 22px;
       line-height: 22px;
-      background-color: #fff;
+      background-color: $huya-yellow;
+      color: $huya-purple-dark;
       position: absolute;
       bottom: 0;
       left: 0;
       font-size: 14px;
+      font-weight: bold;
       z-index: 1;
+      border-bottom-left-radius: 13px;
     }
   }
 }

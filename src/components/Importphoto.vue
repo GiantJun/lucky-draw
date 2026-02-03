@@ -134,31 +134,67 @@ export default {
 };
 </script>
 <style lang="scss">
+@import '@/assets/style/theme.scss';
+
 .c-Importphoto {
   .el-dialog {
     height: 380px;
+    @include glassmorphism;
+    background: rgba(26, 11, 46, 0.95) !important;
+    backdrop-filter: blur(30px);
+    border: 2px solid rgba(249, 215, 28, 0.3);
+    border-radius: 20px;
+    box-shadow: 0 0 60px rgba(249, 215, 28, 0.3);
   }
+
+  .el-dialog__header {
+    border-bottom: 1px solid rgba(249, 215, 28, 0.2);
+  }
+
+  .el-dialog__title {
+    color: $huya-yellow-bright;
+  }
+
+  .el-dialog__body {
+    color: $text-primary;
+  }
+
   label {
     margin-right: 20px;
     vertical-align: top;
+    color: $text-secondary;
   }
+
   .el-input {
     width: 140px;
   }
+
   .el-row {
     padding: 5px 0;
+    color: $text-secondary;
+    font-size: 12px;
   }
+
   .center {
     text-align: center;
   }
+
   .selectbg {
     display: inline-block;
-    border: 1px solid #ccc;
-    border-radius: 2px;
+    border: 1px solid rgba(249, 215, 28, 0.4);
+    border-radius: 4px;
+    background: rgba(45, 27, 78, 0.4);
     width: 140px;
-    height: 28px;
+    height: 32px;
     position: relative;
     box-sizing: border-box;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: rgba(249, 215, 28, 0.8);
+      background: rgba(45, 27, 78, 0.6);
+    }
+
     &::before {
       content: attr(data-tip);
       width: 100%;
@@ -167,11 +203,13 @@ export default {
       position: absolute;
       top: 0;
       left: 0;
-      line-height: 28px;
+      line-height: 32px;
       cursor: pointer;
       overflow: hidden;
       font-size: 12px;
+      color: $text-secondary;
     }
+
     .upload {
       position: absolute;
       top: 0;
@@ -183,20 +221,39 @@ export default {
       cursor: pointer;
     }
   }
+
   .photo {
     img {
-      border: 1px solid #ccc;
+      border: 2px solid rgba(249, 215, 28, 0.5);
+      border-radius: 8px;
     }
+
     span {
       display: inline-block;
-      border: 1px solid #ccc;
-      border-radius: 2px;
+      border: 2px solid rgba(249, 215, 28, 0.3);
+      background: rgba(45, 27, 78, 0.4);
+      border-radius: 8px;
       width: 140px;
       height: 140px;
       line-height: 140px;
       text-align: center;
       position: relative;
       box-sizing: border-box;
+      color: $text-muted;
+    }
+  }
+
+  .el-button--primary {
+    background: $btn-gradient;
+    border: none;
+    color: $huya-purple-dark;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(249, 215, 28, 0.4);
+
+    &:hover {
+      background: $btn-gradient-hover;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(249, 215, 28, 0.6);
     }
   }
 }

@@ -39,7 +39,7 @@
             :key="winnerIndex"
             @click="deleteWinner(levelItem.level, prizeItem.prizeName, winner)"
           >
-            {{ winner.displayName }}
+            {{ winner.realName }}
           </span>
         </div>
       </div>
@@ -106,7 +106,7 @@ export default {
   methods: {
     deleteWinner(level, prizeName, winner) {
       this.$confirm(
-        `此操作将移除 ${winner.displayName} 的中奖记录，确认删除?`,
+        `此操作将移除 ${winner.realName} 的中奖记录，确认删除?`,
         '警告',
         {
           confirmButtonText: '确定',
@@ -189,22 +189,44 @@ export default {
 };
 </script>
 <style lang="scss">
+@import '@/assets/style/theme.scss';
+
 .c-Result {
+  .el-dialog {
+    @include glassmorphism;
+    background: rgba(26, 11, 46, 0.95) !important;
+    backdrop-filter: blur(30px);
+    border: 2px solid rgba(249, 215, 28, 0.3);
+    border-radius: 20px;
+    box-shadow: 0 0 60px rgba(249, 215, 28, 0.3);
+  }
+
+  .el-dialog__header {
+    border-bottom: 1px solid rgba(249, 215, 28, 0.2);
+  }
+
+  .el-dialog__title {
+    color: $huya-yellow-bright;
+    font-size: 20px;
+    font-weight: bold;
+  }
+
   .el-dialog__body {
     max-height: 600px;
     overflow-y: auto;
+    color: $text-primary;
   }
 
   .empty {
     text-align: center;
-    color: #999;
+    color: $text-secondary;
     padding: 40px 0;
     font-size: 14px;
   }
 
   .level-group {
     margin-bottom: 25px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid rgba(249, 215, 28, 0.2);
     padding-bottom: 15px;
 
     &:last-child {
@@ -213,29 +235,34 @@ export default {
 
     .level-name {
       font-weight: bold;
-      font-size: 16px;
+      font-size: 18px;
       margin-bottom: 12px;
-      color: #409eff;
+      color: $huya-yellow-bright;
       padding-left: 10px;
-      border-left: 4px solid #409eff;
+      border-left: 4px solid $huya-yellow;
+      @include neon-text-glow($huya-yellow);
     }
 
     .prize-row {
       display: flex;
       margin-bottom: 10px;
-      padding: 8px 10px;
-      background-color: #f9f9f9;
-      border-radius: 4px;
+      padding: 12px 15px;
+      background: rgba(45, 27, 78, 0.4);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(249, 215, 28, 0.2);
+      border-radius: 8px;
+      transition: all 0.3s ease;
 
       &:hover {
-        background-color: #f5f5f5;
+        background: rgba(45, 27, 78, 0.6);
+        border-color: rgba(249, 215, 28, 0.5);
       }
 
       .prize-name {
         width: 150px;
         font-weight: 600;
-        font-size: 14px;
-        color: #333;
+        font-size: 15px;
+        color: $text-primary;
         flex-shrink: 0;
         display: flex;
         align-items: center;
@@ -248,31 +275,32 @@ export default {
         align-items: center;
 
         .no-winner {
-          color: #999;
+          color: $text-muted;
           font-size: 13px;
         }
 
         .winner-card {
           display: inline-block;
-          padding: 4px 12px;
-          line-height: 22px;
+          padding: 6px 14px;
+          line-height: 24px;
           text-align: center;
           font-size: 14px;
           font-weight: 600;
-          border-radius: 4px;
-          border: 1px solid #dcdfe6;
-          background-color: #fff;
+          border-radius: 6px;
+          border: 1px solid rgba(249, 215, 28, 0.4);
+          background: rgba(45, 27, 78, 0.6);
+          color: $huya-yellow-bright;
           margin-right: 8px;
           margin-bottom: 5px;
           cursor: pointer;
           transition: all 0.3s;
 
           &:hover {
-            background-color: #f56c6c;
+            background: $btn-stop-gradient;
             color: #fff;
-            border-color: #f56c6c;
+            border-color: #ff6b6b;
             transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(245, 108, 108, 0.3);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
           }
         }
       }
@@ -283,7 +311,21 @@ export default {
     text-align: center;
     padding-top: 20px;
     margin-top: 20px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid rgba(249, 215, 28, 0.2);
+  }
+
+  .el-button--primary {
+    background: $btn-gradient;
+    border: none;
+    color: $huya-purple-dark;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(249, 215, 28, 0.4);
+
+    &:hover {
+      background: $btn-gradient-hover;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(249, 215, 28, 0.6);
+    }
   }
 }
 </style>

@@ -1,3 +1,5 @@
+@import './theme.scss';
+
 body,
 html {
   height: 100%;
@@ -5,16 +7,20 @@ html {
   font-family: 'PingFang SC', Microsoft YaHei, '微软雅黑', Tahoma, Arial, HeiTi,
     '黑体', sans-serif;
 }
+
 li {
   list-style: none;
 }
+
 a {
   text-decoration: none;
   color: #333;
 }
+
 i {
   font-style: normal;
 }
+
 p,
 body,
 ul,
@@ -22,33 +28,234 @@ figure {
   padding: 0px;
   margin: 0px;
 }
+
 input {
   outline: none;
 }
+
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
-  background-color: transparent;
+  background-color: rgba(45, 27, 78, 0.5);
 }
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(249, 215, 28, 0.5);
+  border-radius: 3px;
+
+  &:hover {
+    background-color: rgba(249, 215, 28, 0.8);
+  }
+}
+
 body {
   overflow: hidden;
   padding: 0 !important;
 }
+
+// ===== Element UI 覆盖样式 =====
 .el-form-item {
-  margin-bottom: 5px !important;
+  margin-bottom: 15px !important;
 }
+
 .el-dialog__body {
   padding-top: 20px !important;
   padding-bottom: 20px !important;
 }
+
 .el-dialog {
   margin-top: 0 !important;
   top: 50%;
   -webkit-transform: translateY(-50%);
   transform: translateY(-50%);
 }
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-  background-color: #ccc;
+
+.el-dialog__header {
+  .el-dialog__close {
+    color: $text-secondary;
+    font-size: 20px;
+
+    &:hover {
+      color: $huya-yellow-bright;
+    }
+  }
+}
+
+// Input 输入框
+.el-input__inner {
+  background: rgba(45, 27, 78, 0.5);
+  border: 1px solid rgba(249, 215, 28, 0.3);
+  color: $text-primary;
+  transition: all 0.3s ease;
+
+  &:focus {
+    border-color: rgba(249, 215, 28, 0.8);
+    @include neon-glow($huya-yellow, 0.3);
+  }
+
+  &::placeholder {
+    color: $text-muted;
+  }
+}
+
+// Select 下拉框
+.el-select-dropdown {
+  background: rgba(26, 11, 46, 0.98) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(249, 215, 28, 0.3) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+.el-select-dropdown__item {
+  color: $text-primary;
+
+  &:hover {
+    background: rgba(45, 27, 78, 0.8) !important;
+    color: $huya-yellow-bright;
+  }
+
+  &.selected {
+    color: $huya-yellow-bright !important;
+    font-weight: bold;
+  }
+}
+
+// Switch 开关
+.el-switch.is-checked .el-switch__core {
+  background-color: $huya-yellow;
+  border-color: $huya-yellow;
+}
+
+// Button 按钮
+.el-button {
+  transition: all 0.3s ease;
+
+  &--default {
+    background: rgba(45, 27, 78, 0.6);
+    border-color: rgba(249, 215, 28, 0.3);
+    color: $text-primary;
+
+    &:hover {
+      background: rgba(45, 27, 78, 0.8);
+      border-color: rgba(249, 215, 28, 0.6);
+      color: $huya-yellow-bright;
+    }
+  }
+
+  &--text {
+    color: $text-primary;
+
+    &:hover {
+      color: $huya-yellow-bright;
+    }
+  }
+}
+
+// Message 消息提示
+.el-message {
+  background: rgba(26, 11, 46, 0.95) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(249, 215, 28, 0.3) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+
+  .el-message__content {
+    color: $text-primary;
+  }
+}
+
+.el-message--success {
+  background: rgba(26, 11, 46, 0.95) !important;
+  border-color: rgba(103, 194, 58, 0.5) !important;
+
+  .el-message__icon {
+    color: #67c23a;
+  }
+}
+
+.el-message--error {
+  background: rgba(26, 11, 46, 0.95) !important;
+  border-color: rgba(245, 108, 108, 0.5) !important;
+
+  .el-message__icon {
+    color: #f56c6c;
+  }
+}
+
+.el-message--warning {
+  background: rgba(26, 11, 46, 0.95) !important;
+  border-color: rgba(230, 162, 60, 0.5) !important;
+
+  .el-message__icon {
+    color: #e6a23c;
+  }
+}
+
+// MessageBox 弹窗
+.el-message-box {
+  background: rgba(26, 11, 46, 0.98) !important;
+  backdrop-filter: blur(30px);
+  border: 2px solid rgba(249, 215, 28, 0.3) !important;
+  border-radius: 15px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5) !important;
+
+  .el-message-box__header {
+    .el-message-box__title {
+      color: $huya-yellow-bright;
+    }
+
+    .el-message-box__close {
+      color: $text-secondary;
+
+      &:hover {
+        color: $huya-yellow-bright;
+      }
+    }
+  }
+
+  .el-message-box__content {
+    color: $text-primary;
+  }
+
+  .el-message-box__btns {
+    .el-button--primary {
+      background: $btn-gradient;
+      border: none;
+      color: $huya-purple-dark;
+
+      &:hover {
+        background: $btn-gradient-hover;
+      }
+    }
+
+    .el-button--default {
+      background: rgba(45, 27, 78, 0.6);
+      border-color: rgba(249, 215, 28, 0.3);
+      color: $text-primary;
+
+      &:hover {
+        border-color: rgba(249, 215, 28, 0.6);
+        color: $huya-yellow-bright;
+      }
+    }
+  }
+}
+
+// Collapse 折叠面板
+.el-collapse {
+  border-color: rgba(249, 215, 28, 0.2);
+}
+
+.el-collapse-item__header {
+  background: rgba(45, 27, 78, 0.3);
+  color: $text-primary;
+  border-bottom-color: rgba(249, 215, 28, 0.2);
+
+  &:hover {
+    color: $huya-yellow-bright;
+  }
+}
+
+.el-collapse-item__content {
+  background: rgba(45, 27, 78, 0.2);
+  color: $text-primary;
 }

@@ -1,0 +1,136 @@
+// ===== 虎牙品牌色 =====
+$huya-purple-dark: #1a0b2e;
+$huya-purple: #2d1b4e;
+$huya-purple-light: #4a2f6e;
+$huya-yellow: #f9d71c;
+$huya-yellow-bright: #ffd700;
+$huya-yellow-dark: #e5c10f;
+
+// ===== 中性色 =====
+$text-primary: #ffffff;
+$text-secondary: #b8a8d8;
+$text-muted: #8070a0;
+
+// ===== 背景渐变 =====
+$bg-gradient: linear-gradient(135deg, #1a0b2e 0%, #2d1b4e 50%, #1a0b2e 100%);
+
+// ===== 按钮渐变 =====
+$btn-gradient: linear-gradient(135deg, #f9d71c 0%, #ffd700 100%);
+$btn-gradient-hover: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+$btn-stop-gradient: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+
+// ===== 磨砂玻璃 Mixin =====
+@mixin glassmorphism {
+  background: rgba(45, 27, 78, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+// ===== 霓虹光效 Mixin =====
+@mixin neon-glow($color: #f9d71c, $intensity: 1) {
+  box-shadow:
+    0 0 #{10px * $intensity} $color,
+    0 0 #{20px * $intensity} $color,
+    0 0 #{40px * $intensity} $color;
+}
+
+@mixin neon-text-glow($color: #f9d71c) {
+  text-shadow:
+    0 0 20px rgba($color, 0.8),
+    0 0 40px rgba($color, 0.6),
+    0 0 60px rgba($color, 0.4);
+}
+
+// ===== 呼吸灯边框 Mixin =====
+@mixin breathing-border($duration: 3s) {
+  animation: breathing $duration ease-in-out infinite;
+}
+
+@mixin breathing-border-fast {
+  animation: breathing-fast 1.5s ease-in-out infinite;
+}
+
+// ===== 呼吸灯动画 =====
+@keyframes breathing {
+  0%, 100% {
+    box-shadow:
+      0 0 40px rgba(249, 215, 28, 0.2),
+      inset 0 0 60px rgba(45, 27, 78, 0.8);
+    border-color: rgba(249, 215, 28, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 80px rgba(249, 215, 28, 0.5),
+      inset 0 0 80px rgba(45, 27, 78, 0.9);
+    border-color: rgba(249, 215, 28, 0.8);
+  }
+}
+
+@keyframes breathing-fast {
+  0%, 100% {
+    box-shadow:
+      0 0 60px rgba(249, 215, 28, 0.4),
+      inset 0 0 80px rgba(45, 27, 78, 0.9);
+    border-color: rgba(249, 215, 28, 0.5);
+  }
+  50% {
+    box-shadow:
+      0 0 120px rgba(249, 215, 28, 0.8),
+      inset 0 0 100px rgba(45, 27, 78, 1);
+    border-color: rgba(249, 215, 28, 1);
+  }
+}
+
+// ===== 霓虹闪烁动画 =====
+@keyframes neon-flicker {
+  0%, 100% {
+    opacity: 1;
+    text-shadow:
+      0 0 20px rgba(249, 215, 28, 0.8),
+      0 0 40px rgba(249, 215, 28, 0.6);
+  }
+  50% {
+    opacity: 0.9;
+    text-shadow:
+      0 0 30px rgba(249, 215, 28, 1),
+      0 0 60px rgba(249, 215, 28, 0.8);
+  }
+}
+
+// ===== 粒子漂浮动画 =====
+@keyframes particle-float {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(30px, -30px);
+    opacity: 0.8;
+  }
+}
+
+// ===== 卡片弹出动画 =====
+@keyframes card-pop {
+  0% {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.1) rotate(10deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+// ===== 脉冲动画 =====
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}

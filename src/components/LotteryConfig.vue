@@ -2,7 +2,7 @@
   <el-dialog
     :visible="visible"
     :append-to-body="true"
-    width="500px"
+    width="650px"
     @close="$emit('update:visible', false)"
     class="c-LotteryConfig"
   >
@@ -18,7 +18,7 @@
       >
     </div>
     <div class="container">
-      <el-form ref="form" :model="form" size="mini" label-width="130px">
+      <el-form ref="form" :model="form" size="mini" label-width="130px" label-position="left">
         <el-form-item label="抽奖标题">
           <el-input v-model="form.name"></el-input>
         </el-form-item>
@@ -110,24 +110,25 @@
           </div>
         </el-form-item>
 
+        <el-divider>奖品信息</el-divider>
+
         <el-collapse accordion v-if="hasPrizes">
           <el-collapse-item title="查看奖品列表" name="1">
-            <div
-              v-for="(prizes, level) in storePrizes"
-              :key="level"
-              class="prize-level"
-            >
-              <div class="level-name">{{ level }}</div>
+            <div class="prize-list-container">
               <div
-                v-for="(prize, index) in prizes"
-                :key="index"
-                class="prize-item"
+                v-for="(prizes, level) in storePrizes"
+                :key="level"
+                class="prize-level"
               >
-                <span class="prize-name">{{ prize.name }}</span>
-                <span class="prize-qty">数量: {{ prize.quantity }}</span>
-                <span class="prize-eligibility"
-                  >参与: {{ prize.eligibility }}</span
+                <div class="level-name">{{ level }}</div>
+                <div
+                  v-for="(prize, index) in prizes"
+                  :key="index"
+                  class="prize-item"
                 >
+                  <span class="prize-name">{{ prize.name }}</span>
+                  <span class="prize-qty">x {{ prize.quantity }}</span>
+                </div>
               </div>
             </div>
           </el-collapse-item>
@@ -372,39 +373,159 @@ export default {
 };
 </script>
 <style lang="scss">
+@import '@/assets/style/theme.scss';
+
 .c-LotteryConfig {
+  .el-dialog {
+    @include glassmorphism;
+    background: rgba(26, 11, 46, 0.95) !important;
+    backdrop-filter: blur(30px);
+    border: 2px solid rgba(249, 215, 28, 0.3);
+    border-radius: 20px;
+    box-shadow: 0 0 60px rgba(249, 215, 28, 0.3);
+  }
+
+  .el-dialog__header {
+    border-bottom: 1px solid rgba(249, 215, 28, 0.2);
+  }
+
+  .el-dialog__title {
+    color: $huya-yellow-bright;
+    font-size: 20px;
+    font-weight: bold;
+  }
+
   .el-dialog__body {
-    max-height: 500px;
+    max-height: 70vh;
+    color: $text-primary;
+    padding: 10px 20px;
+
     .container {
       height: 100%;
       overflow-y: auto;
-      padding: 0 10px;
+      padding: 0 5px;
     }
+  }
+
+  .el-form-item__label {
+    color: $text-secondary;
+  }
+
+  .el-form-item {
+    margin-bottom: 15px;
+  }
+
+  .el-divider {
+    margin: 15px 0;
+    background-color: rgba(249, 215, 28, 0.2);
+  }
+
+  .el-divider__text {
+    color: $text-secondary;
+    background-color: rgba(26, 11, 46, 0.95);
+  }
+
+  .el-collapse {
+    border: none;
+    background: transparent;
+
+    .el-collapse-item__header {
+      background: rgba(45, 27, 78, 0.4);
+      border: 1px solid rgba(249, 215, 28, 0.2);
+      border-radius: 8px;
+      color: $text-primary;
+      padding: 0 15px;
+      height: 40px;
+      line-height: 40px;
+      margin-bottom: 10px;
+      transition: all 0.3s;
+
+      &:hover {
+        border-color: rgba(249, 215, 28, 0.5);
+        background: rgba(45, 27, 78, 0.6);
+      }
+
+      .el-collapse-item__arrow {
+        color: $huya-yellow-bright;
+      }
+    }
+
+    .el-collapse-item__wrap {
+      border: none;
+      background: transparent;
+    }
+
+    .el-collapse-item__content {
+      padding: 0;
+      color: $text-primary;
+    }
+  }
+
+  .prize-list-container {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(45, 27, 78, 0.2);
+    border-radius: 8px;
   }
 
   .prize-level {
     margin-bottom: 15px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
     .level-name {
       font-weight: bold;
-      font-size: 14px;
+      font-size: 13px;
       margin-bottom: 8px;
-      color: #409eff;
+      color: $huya-yellow-bright;
+      padding: 5px 10px;
+      background: rgba(249, 215, 28, 0.1);
+      border-radius: 4px;
+      border-left: 3px solid $huya-yellow;
     }
+
     .prize-item {
       display: flex;
       align-items: center;
-      padding: 5px 0;
+      justify-content: space-between;
+      padding: 6px 10px;
       font-size: 12px;
-      color: #666;
+      color: $text-secondary;
+      border-radius: 4px;
+      transition: all 0.2s;
+
+      &:hover {
+        background: rgba(249, 215, 28, 0.05);
+      }
+
       .prize-name {
         flex: 1;
+        color: $text-primary;
       }
+
       .prize-qty {
-        margin: 0 10px;
+        color: $huya-yellow-bright;
+        font-weight: 600;
+        min-width: 50px;
+        text-align: right;
       }
-      .prize-eligibility {
-        color: #999;
-      }
+    }
+  }
+
+  .el-button--primary {
+    background: $btn-gradient;
+    border: none;
+    color: $huya-purple-dark;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(249, 215, 28, 0.4);
+
+    &:hover {
+      background: $btn-gradient-hover;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(249, 215, 28, 0.6);
     }
   }
 }
