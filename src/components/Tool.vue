@@ -58,12 +58,6 @@
               <span class="colorred">{{ selectedPrizesRemainQuantity }}</span>
             </span>
           </div>
-          <div :style="{ marginTop: '5px' }">
-            <span>
-              符合条件候选人:&nbsp;
-              <span class="colorred">{{ candidatesCount }}</span>
-            </span>
-          </div>
         </el-form-item>
 
         <!-- 抽取方式：固定为"一次抽取完选中的奖品" -->
